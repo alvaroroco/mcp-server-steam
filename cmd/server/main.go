@@ -50,10 +50,8 @@ func main() {
 
 func makeGetRecentGamesHandler(client *steam.Client, defaultSteamID string) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		steamID := defaultSteamID
-		if v, ok := req.Params.Arguments["steam_id"].(string); ok && v != "" {
-			steamID = v
-		}
+		steamID := req.GetString("steam_id", defaultSteamID)
+
 		if steamID == "" {
 			return mcp.NewToolResultError("steam_id is required — pass it as a parameter or set the STEAM_ID env var"), nil
 		}
@@ -80,10 +78,8 @@ func makeGetRecentGamesHandler(client *steam.Client, defaultSteamID string) serv
 
 func makeGetOwnedGamesHandler(client *steam.Client, defaultSteamID string) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		steamID := defaultSteamID
-		if v, ok := req.Params.Arguments["steam_id"].(string); ok && v != "" {
-			steamID = v
-		}
+		steamID := req.GetString("steam_id", defaultSteamID)
+
 		if steamID == "" {
 			return mcp.NewToolResultError("steam_id is required — pass it as a parameter or set the STEAM_ID env var"), nil
 		}
