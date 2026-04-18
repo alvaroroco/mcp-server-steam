@@ -1,0 +1,23 @@
+{
+    "name": "mcp-steam-server",
+    "version": "1.0.0",
+    "description": "MCP server for Steam Web API (recent games, owned games)",
+    "runtime": {
+        "type": "docker",
+        "image": "alvaroroco1/mcp-server-steam:1.0.0"
+    },
+    "env": [
+        {
+            "name": "STEAM_API_KEY",
+            "required": true
+        },
+        {
+            "name": "STEAM_ID",
+            "required": false
+        }
+    ],
+    "tools": [
+        "get_recent_games",
+        "get_owned_games"
+    ]
+}
