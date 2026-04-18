@@ -1,5 +1,5 @@
 {
-    "name": "mcp-steam-server",
+    "name": "mcp-server-steam",
     "version": "1.0.0",
     "description": "MCP server for Steam Web API (recent games, owned games)",
     "runtime": {
