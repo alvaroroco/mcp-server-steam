@@ -20,6 +20,11 @@ func main() {
 
 	steamClient := steam.New(apiKey)
 	defaultSteamID := os.Getenv("STEAM_ID")
+	if defaultSteamID != "" {
+		if err := steam.ValidateSteamID(defaultSteamID); err != nil {
+			log.Fatalf("invalid STEAM_ID env var: %v", err)
+		}
+	}
 
 	s := server.NewMCPServer(
 		"mcp-server-steam",
@@ -48,12 +53,12 @@ func main() {
 	}
 }
 
-func makeGetRecentGamesHandler(client *steam.Client, defaultSteamID string) server.ToolHandlerFunc {
+func makeGetRecentGamesHandler(client steam.ClientInterface, defaultSteamID string) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		steamID := req.GetString("steam_id", defaultSteamID)
 
-		if steamID == "" {
-			return mcp.NewToolResultError("steam_id is required — pass it as a parameter or set the STEAM_ID env var"), nil
+		if err := steam.ValidateSteamID(steamID); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 
 		resp, err := client.GetRecentGames(ctx, steamID)
@@ -76,12 +81,12 @@ func makeGetRecentGamesHandler(client *steam.Client, defaultSteamID string) serv
 	}
 }
 
-func makeGetOwnedGamesHandler(client *steam.Client, defaultSteamID string) server.ToolHandlerFunc {
+func makeGetOwnedGamesHandler(client steam.ClientInterface, defaultSteamID string) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		steamID := req.GetString("steam_id", defaultSteamID)
 
-		if steamID == "" {
-			return mcp.NewToolResultError("steam_id is required — pass it as a parameter or set the STEAM_ID env var"), nil
+		if err := steam.ValidateSteamID(steamID); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
 		}
 
 		resp, err := client.GetOwnedGames(ctx, steamID)
