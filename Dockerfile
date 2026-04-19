@@ -17,4 +17,9 @@ WORKDIR /app
 
 COPY --from=builder /mcp-server-steam .
 
+ENV MCP_TRANSPORT=stdio
+ENV MCP_PORT=8080
+
+EXPOSE 8080
+
 ENTRYPOINT ["/app/mcp-server-steam"]

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/alvaroroco/mcp-server-steam/internal/steam"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -16,6 +18,11 @@ func main() {
 	apiKey := os.Getenv("STEAM_API_KEY")
 	if apiKey == "" {
 		log.Fatal("STEAM_API_KEY is not set")
+	}
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		log.Fatalf("invalid configuration: %v", err)
 	}
 
 	steamClient := steam.New(apiKey)
@@ -48,8 +55,64 @@ func main() {
 	)
 	s.AddTool(ownedGamesTool, makeGetOwnedGamesHandler(steamClient, defaultSteamID))
 
-	if err := server.ServeStdio(s); err != nil {
-		log.Fatalf("server error: %v", err)
+	log.Printf(startupLogMessage(cfg))
+
+	switch cfg.Transport {
+	case "stdio":
+		if err := server.ServeStdio(s); err != nil {
+			log.Fatalf("server error: %v", err)
+		}
+
+	case "http":
+		log.Printf("HTTP/SSE server listening on :%d", cfg.Port)
+
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+
+		if err := runHTTPServer(ctx, s, cfg.Port); err != nil {
+			log.Fatalf("HTTP/SSE server error: %v", err)
+		}
+	}
+}
+
+// startupLogMessage returns the log message announcing the active transport.
+// Extracted as a pure function so it can be unit-tested without side effects.
+func startupLogMessage(cfg Config) string {
+	switch cfg.Transport {
+	case "http":
+		return fmt.Sprintf("Starting MCP server with HTTP transport on port %d", cfg.Port)
+	default:
+		return fmt.Sprintf("Starting MCP server with %s transport", cfg.Transport)
+	}
+}
+
+// httpBaseURL builds the base URL for the SSE server given a port number.
+func httpBaseURL(port int) string {
+	return fmt.Sprintf("http://localhost:%d", port)
+}
+
+// runHTTPServer starts the SSE HTTP server on the given port and blocks until
+// ctx is cancelled, at which point it performs a graceful shutdown.
+// It returns nil on clean shutdown and any other error from the server itself.
+func runHTTPServer(ctx context.Context, s *server.MCPServer, port int) error {
+	sseServer := server.NewSSEServer(s,
+		server.WithBaseURL(httpBaseURL(port)),
+	)
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- sseServer.Start(fmt.Sprintf(":%d", port))
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Printf("Shutting down HTTP/SSE server…")
+		if err := sseServer.Shutdown(context.Background()); err != nil {
+			log.Printf("shutdown error: %v", err)
+		}
+		return nil
+	case err := <-errCh:
+		return err
 	}
 }
 
