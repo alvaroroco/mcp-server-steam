@@ -1,0 +1,22 @@
+# Binaries
+mcp-server-steam
+/bin/
+
+# Test coverage
+coverage.out
+coverage.html
+*.coverprofile
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
